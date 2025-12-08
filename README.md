@@ -176,6 +176,37 @@ The generated code uses this memory layout for RetroShield:
 0x8000 - 0xFFFF   Variables (grows up) / Stack (grows down)
 ```
 
+## Runtime and I/O
+
+The compiler includes a minimal runtime that provides serial I/O through the MC6850 ACIA chip emulated by the [RetroShield Z80](https://gitlab.com/ajokela/retroshield-arduino/) (see the `kz80` directory for the emulator):
+
+| Port | Function |
+|------|----------|
+| `$80` | ACIA Control/Status register |
+| `$81` | ACIA Data register |
+
+### Status Register Bits
+- Bit 0 (RDRF): Receive Data Register Full - set when a character is available
+- Bit 1 (TDRE): Transmit Data Register Empty - set when ready to send
+
+### Built-in I/O Functions
+
+| Function | Description |
+|----------|-------------|
+| `print(s)` | Print null-terminated string |
+| `println()` | Print carriage return + line feed |
+| `printc(c)` | Print single character |
+| `printi(n)` | Print signed 16-bit integer |
+| `readc()` | Wait for and return a character |
+
+### Runtime Routines
+
+The runtime also includes 16-bit arithmetic routines:
+- `_mul16` - 16-bit multiplication (HL × DE → HL)
+- `_div16` - 16-bit division (HL ÷ DE → HL, remainder in BC)
+- `_mod16` - 16-bit modulo
+- `_cmp16` - Signed 16-bit comparison
+
 ## Hardware Requirements
 
 Designed for the RetroShield Z80 with Teensy adapter (256KB RAM). The Arduino Mega version has limited RAM (~4KB) which restricts program size.
