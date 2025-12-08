@@ -178,7 +178,7 @@ The generated code uses this memory layout for RetroShield:
 
 ## Runtime and I/O
 
-The compiler includes a minimal runtime that provides serial I/O through the MC6850 ACIA chip emulated by the [RetroShield Z80](https://gitlab.com/ajokela/retroshield-arduino/) (see the `kz80` directory for the emulator):
+The compiler includes a minimal runtime that provides serial I/O through the MC6850 ACIA chip. The ACIA emulation is implemented in the [RetroShield Z80 firmware](https://gitlab.com/ajokela/retroshield-arduino/-/blob/master/kz80/kz80_forth/kz80_forth.ino):
 
 | Port | Function |
 |------|----------|
