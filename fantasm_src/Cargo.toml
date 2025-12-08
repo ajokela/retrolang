@@ -1,0 +1,28 @@
+[package]
+build = "build.rs"
+name = "fantasm"
+version = "1.1.10"
+authors = ["Guy Black <captainblack@zx-spectrum.org.uk>"]
+edition = "2018"
+
+[dependencies]
+asciimath = { git = "https://github.com/CatpainBlack/asciimath-rs.git" }
+argparse = "0.2.2"
+colour = "0.5.0"
+regex = "1"
+lazy_static = "1.4.0"
+version = "3.0.0"
+rand = "0.7.3"
+ascii = "1"
+pad = "0.1.6"
+indexmap = "1.4.0"
+envmnt = "0.8.2"
+
+[build-dependencies]
+chrono = "0.4.11"
+
+[profile.release]
+opt-level = 3       # Optimize for speed.
+lto = true          # Enable Link Time Optimization
+codegen-units = 1   # Reduce number of codegen units to increase optimizations.
+panic = 'abort'     # Abort on panic

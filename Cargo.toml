@@ -1,0 +1,19 @@
+[workspace]
+members = [".", "fantasm_src"]
+resolver = "2"
+
+[package]
+name = "retrolang"
+version = "0.1.0"
+edition = "2021"
+description = "A simple systems programming language compiler for Z80 microprocessors"
+authors = ["Alex Jokela"]
+license = "BSD-3-Clause"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+thiserror = "1"
+logos = "0.14"
+
+[dev-dependencies]
+pretty_assertions = "1"
