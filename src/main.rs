@@ -25,7 +25,7 @@ enum SerialDriverArg {
 #[derive(ClapParser, Debug)]
 #[command(name = "retrolang")]
 #[command(author = "Alex Jokela")]
-#[command(version = "0.1.0")]
+#[command(version = "0.1.1")]
 #[command(about = "RetroLang compiler for Z80", long_about = None)]
 struct Args {
     /// Input source file

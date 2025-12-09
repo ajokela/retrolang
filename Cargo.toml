@@ -4,7 +4,7 @@ default-members = [".", "tools/bin2c"]
 
 [package]
 name = "retrolang"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "A simple systems programming language compiler for Z80 microprocessors"
 authors = ["Alex Jokela"]
