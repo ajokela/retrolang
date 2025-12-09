@@ -7,10 +7,20 @@ mod codegen;
 mod lexer;
 mod parser;
 
-use clap::Parser as ClapParser;
+use clap::{Parser as ClapParser, ValueEnum};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+
+use codegen::SerialDriver;
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum SerialDriverArg {
+    /// MC6850 ACIA (ports $80/$81)
+    Acia,
+    /// Intel 8251 USART (ports $00/$01)
+    Intel,
+}
 
 #[derive(ClapParser, Debug)]
 #[command(name = "retrolang")]
@@ -37,6 +47,10 @@ struct Args {
     /// Path to FantASM assembler (default: fantasm in PATH or ./fantasm_src/target/release/fantasm)
     #[arg(long)]
     fantasm: Option<PathBuf>,
+
+    /// Serial driver to use for I/O
+    #[arg(long, value_enum, default_value = "acia")]
+    serial: SerialDriverArg,
 
     /// Print tokens (for debugging)
     #[arg(long)]
@@ -86,7 +100,11 @@ fn main() {
     }
 
     // Generate code
-    let mut codegen = codegen::CodeGen::new();
+    let serial_driver = match args.serial {
+        SerialDriverArg::Acia => SerialDriver::Acia,
+        SerialDriverArg::Intel => SerialDriver::Intel8251,
+    };
+    let mut codegen = codegen::CodeGen::new(serial_driver);
     let asm = codegen.compile(&program);
 
     // Determine output paths
@@ -155,7 +173,8 @@ fn main() {
                 }
             }
             None => {
-                eprintln!("FantASM assembler not found. Install it or use --fantasm to specify path.");
+                eprintln!("Assembler not found. Install with: cargo install retrolang-asm");
+                eprintln!("Or use --fantasm to specify path to any Z80 assembler.");
                 eprintln!("Assembly file saved to: {}", asm_path.display());
                 std::process::exit(1);
             }
@@ -163,7 +182,7 @@ fn main() {
     }
 }
 
-/// Find the FantASM assembler executable
+/// Find the assembler executable (retrolang-asm or fantasm)
 fn find_fantasm(explicit_path: &Option<PathBuf>) -> Option<PathBuf> {
     // 1. Use explicit path if provided
     if let Some(path) = explicit_path {
@@ -172,9 +191,14 @@ fn find_fantasm(explicit_path: &Option<PathBuf>) -> Option<PathBuf> {
         }
     }
 
-    // 2. Check next to this executable (workspace build puts both in same dir)
+    // 2. Check next to this executable
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(exe_dir) = exe_path.parent() {
+            // Prefer retrolang-asm
+            let retrolang_asm = exe_dir.join("retrolang-asm");
+            if retrolang_asm.exists() {
+                return Some(retrolang_asm);
+            }
             let fantasm = exe_dir.join("fantasm");
             if fantasm.exists() {
                 return Some(fantasm);
@@ -182,20 +206,24 @@ fn find_fantasm(explicit_path: &Option<PathBuf>) -> Option<PathBuf> {
         }
     }
 
-    // 3. Check for fantasm in PATH
-    if let Ok(output) = Command::new("which").arg("fantasm").output() {
-        if output.status.success() {
-            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !path.is_empty() {
-                return Some(PathBuf::from(path));
+    // 3. Check for retrolang-asm or fantasm in PATH
+    for name in &["retrolang-asm", "fantasm"] {
+        if let Ok(output) = Command::new("which").arg(name).output() {
+            if output.status.success() {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path.is_empty() {
+                    return Some(PathBuf::from(path));
+                }
             }
         }
     }
 
     // 4. Check current working directory
-    let cwd_fantasm = PathBuf::from("fantasm");
-    if cwd_fantasm.exists() {
-        return Some(cwd_fantasm);
+    for name in &["retrolang-asm", "fantasm"] {
+        let path = PathBuf::from(name);
+        if path.exists() {
+            return Some(path);
+        }
     }
 
     None

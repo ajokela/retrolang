@@ -135,36 +135,46 @@ proc main()
 end;
 ```
 
-## Building from Source
+## Installation
 
-Requires Rust 1.70 or later. The build includes both RetroLang and the FantASM assembler:
+### From crates.io (Recommended)
+
+```bash
+# Install the compiler
+cargo install retrolang
+
+# Install the assembler (required for --binary output)
+cargo install retrolang-asm
+```
+
+### From Source
+
+Requires Rust 1.70 or later:
 
 ```bash
 cargo build --release
 ```
-
-Both `retrolang` and `fantasm` binaries are placed in `target/release/`.
 
 ## Compiling Programs
 
 ### Direct Binary Output (Recommended)
 
 ```bash
-# Compile to binary (automatically finds fantasm)
-./target/release/retrolang program.rl --binary
+# Compile to binary (requires retrolang-asm)
+retrolang program.rl --binary
 
 # Keep intermediate .asm file for inspection
-./target/release/retrolang program.rl --binary --keep-asm
+retrolang program.rl --binary --keep-asm
 ```
 
 ### Assembly Only
 
 ```bash
 # Output assembly file only
-./target/release/retrolang program.rl
+retrolang program.rl
 
 # Then assemble with any Z80 assembler
-./target/release/fantasm program.asm program.bin
+retrolang-asm program.asm program.bin
 ```
 
 ## Memory Layout
@@ -176,18 +186,45 @@ The generated code uses this memory layout for RetroShield:
 0x8000 - 0xFFFF   Variables (grows up) / Stack (grows down)
 ```
 
-## Runtime and I/O
+## Serial Drivers
 
-The compiler includes a minimal runtime that provides serial I/O through the MC6850 ACIA chip. The ACIA emulation is implemented in the [RetroShield Z80 firmware](https://gitlab.com/ajokela/retroshield-arduino/-/blob/master/kz80/kz80_forth/kz80_forth.ino):
+RetroLang supports two serial drivers for I/O, selected with the `--serial` option:
+
+```bash
+# Use MC6850 ACIA (default)
+./target/release/retrolang program.rl --binary --serial acia
+
+# Use Intel 8251 USART
+./target/release/retrolang program.rl --binary --serial intel
+```
+
+### MC6850 ACIA (default)
+
+Used by kz80_forth, kz80_pascal, and other custom RetroShield firmware. The ACIA emulation is implemented in the [RetroShield Z80 firmware](https://gitlab.com/ajokela/retroshield-arduino/-/blob/master/kz80/kz80_forth/kz80_forth.ino).
 
 | Port | Function |
 |------|----------|
-| `$80` | ACIA Control/Status register |
-| `$81` | ACIA Data register |
+| `$80` | Control/Status register |
+| `$81` | Data register |
 
-### Status Register Bits
+Status bits:
 - Bit 0 (RDRF): Receive Data Register Full - set when a character is available
 - Bit 1 (TDRE): Transmit Data Register Empty - set when ready to send
+
+### Intel 8251 USART
+
+Used by the original RetroShield Arduino sketches, Grant Searle's BASIC, and EFEX monitor.
+
+| Port | Function |
+|------|----------|
+| `$00` | Data register |
+| `$01` | Control/Status register |
+
+Status bits:
+- Bit 0 (TxRDY): Transmit Ready - set when ready to send
+- Bit 1 (RxRDY): Receive Ready - set when a character is available
+
+## Runtime and I/O
 
 ### Built-in I/O Functions
 
@@ -215,6 +252,7 @@ Designed for the RetroShield Z80 with Teensy adapter (256KB RAM). The Arduino Me
 
 RetroLang is licensed under the BSD 3-Clause License. See [LICENSE](LICENSE) for details.
 
-### Third-Party Components
+### Related Projects
 
-This project includes [FantASM](https://github.com/CaptainBlack/FantASM), a Z80 assembler by Guy Black, licensed under the BSD 2-Clause License. See [fantasm_src/LICENSE](fantasm_src/LICENSE) for details.
+- [retrolang-asm](https://github.com/ajokela/retrolang-asm) - Z80 assembler (based on FantASM by Guy Black), BSD 2-Clause License
+- [retrolang-math](https://github.com/ajokela/retrolang-math) - Expression evaluator (based on asciimath by chmln), MIT License

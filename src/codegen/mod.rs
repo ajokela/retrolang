@@ -6,6 +6,15 @@ use crate::ast::*;
 use std::collections::HashMap;
 use std::fmt::Write;
 
+/// Serial driver selection
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SerialDriver {
+    /// MC6850 ACIA (ports $80/$81) - used by kz80_forth, kz80_pascal, etc.
+    Acia,
+    /// Intel 8251 USART (ports $00/$01) - used by Grant's BASIC, EFEX, etc.
+    Intel8251,
+}
+
 /// Symbol information for code generation
 #[derive(Debug, Clone)]
 pub struct Symbol {
@@ -51,10 +60,13 @@ pub struct CodeGen {
 
     /// String literals to emit in data section
     strings: Vec<(String, String)>, // (label, content)
+
+    /// Serial driver to use for I/O
+    serial_driver: SerialDriver,
 }
 
 impl CodeGen {
-    pub fn new() -> Self {
+    pub fn new(serial_driver: SerialDriver) -> Self {
         Self {
             output: String::new(),
             globals: HashMap::new(),
@@ -64,6 +76,7 @@ impl CodeGen {
             label_counter: 0,
             loop_stack: Vec::new(),
             strings: Vec::new(),
+            serial_driver,
         }
     }
 
@@ -1035,22 +1048,37 @@ impl CodeGen {
         self.emit("");
 
         // Serial I/O routines for RetroShield
-        // MC6850 ACIA: Control/Status at $80, Data at $81
-        // Status bits: 0=RDRF (rx ready), 1=TDRE (tx ready)
-        self.emit("; MC6850 ACIA I/O (RetroShield Z80)");
-        self.emit("ACIA_CTRL   equ $80");
-        self.emit("ACIA_DATA   equ $81");
+        match self.serial_driver {
+            SerialDriver::Acia => {
+                // MC6850 ACIA: Control/Status at $80, Data at $81
+                // Status bits: 0=RDRF (rx ready), 1=TDRE (tx ready)
+                self.emit("; MC6850 ACIA I/O (RetroShield Z80)");
+                self.emit("SERIAL_CTRL equ $80");
+                self.emit("SERIAL_DATA equ $81");
+                self.emit("TX_READY    equ 1");  // Bit 1 = TDRE
+                self.emit("RX_READY    equ 0");  // Bit 0 = RDRF
+            }
+            SerialDriver::Intel8251 => {
+                // Intel 8251 USART: Data at $00, Control/Status at $01
+                // Status bits: 0=TxRDY (tx ready), 1=RxRDY (rx ready)
+                self.emit("; Intel 8251 USART I/O (RetroShield Z80)");
+                self.emit("SERIAL_DATA equ $00");
+                self.emit("SERIAL_CTRL equ $01");
+                self.emit("TX_READY    equ 0");  // Bit 0 = TxRDY
+                self.emit("RX_READY    equ 1");  // Bit 1 = RxRDY
+            }
+        }
         self.emit("");
 
         self.emit("_printc:");
         self.emit("    ld a, l");
         self.emit("    push af");
         self.emit(".printc_wait:");
-        self.emit("    in a, (ACIA_CTRL)");
-        self.emit("    bit 1, a");  // TDRE - transmit ready
+        self.emit("    in a, (SERIAL_CTRL)");
+        self.emit("    bit TX_READY, a");
         self.emit("    jr z, .printc_wait");
         self.emit("    pop af");
-        self.emit("    out (ACIA_DATA), a");
+        self.emit("    out (SERIAL_DATA), a");
         self.emit("    ret");
         self.emit("");
 
@@ -1078,10 +1106,10 @@ impl CodeGen {
 
         self.emit("_readc:");
         self.emit(".readc_wait:");
-        self.emit("    in a, (ACIA_CTRL)");
-        self.emit("    bit 0, a");  // RDRF - receive ready
+        self.emit("    in a, (SERIAL_CTRL)");
+        self.emit("    bit RX_READY, a");
         self.emit("    jr z, .readc_wait");
-        self.emit("    in a, (ACIA_DATA)");
+        self.emit("    in a, (SERIAL_DATA)");
         self.emit("    ld l, a");
         self.emit("    ld h, 0");
         self.emit("    ret");
@@ -1139,6 +1167,6 @@ impl CodeGen {
 
 impl Default for CodeGen {
     fn default() -> Self {
-        Self::new()
+        Self::new(SerialDriver::Acia)
     }
 }
