@@ -22,7 +22,7 @@ cargo build --release
 ./target/release/retrolang examples/hello.rl
 # Produces hello.asm
 
-# Compile directly to binary (requires FantASM)
+# Compile directly to binary (requires retrolang-asm)
 ./target/release/retrolang examples/hello.rl --binary
 # Produces hello.bin ready to load on RetroShield
 ```

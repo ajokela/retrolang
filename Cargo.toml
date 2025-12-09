@@ -1,3 +1,7 @@
+[workspace]
+members = [".", "tools/bin2c"]
+default-members = [".", "tools/bin2c"]
+
 [package]
 name = "retrolang"
 version = "0.1.0"

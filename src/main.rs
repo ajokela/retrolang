@@ -36,7 +36,7 @@ struct Args {
     #[arg(short, long)]
     output: Option<PathBuf>,
 
-    /// Assemble to binary (requires FantASM)
+    /// Assemble to binary (requires retrolang-asm)
     #[arg(short, long)]
     binary: bool,
 
@@ -44,9 +44,9 @@ struct Args {
     #[arg(long)]
     keep_asm: bool,
 
-    /// Path to FantASM assembler (default: fantasm in PATH or ./fantasm_src/target/release/fantasm)
+    /// Path to assembler (default: retrolang-asm in PATH)
     #[arg(long)]
-    fantasm: Option<PathBuf>,
+    assembler: Option<PathBuf>,
 
     /// Serial driver to use for I/O
     #[arg(long, value_enum, default_value = "acia")]
@@ -144,11 +144,11 @@ fn main() {
 
     // Assemble to binary if requested
     if let Some(ref bin_path) = bin_path {
-        let fantasm_path = find_fantasm(&args.fantasm);
+        let asm_exe = find_assembler(&args.assembler);
 
-        match fantasm_path {
-            Some(fantasm) => {
-                let status = Command::new(&fantasm)
+        match asm_exe {
+            Some(assembler) => {
+                let status = Command::new(&assembler)
                     .arg(&asm_path)
                     .arg(bin_path)
                     .status();
@@ -163,18 +163,18 @@ fn main() {
                         }
                     }
                     Ok(s) => {
-                        eprintln!("FantASM failed with exit code: {:?}", s.code());
+                        eprintln!("Assembler failed with exit code: {:?}", s.code());
                         std::process::exit(1);
                     }
                     Err(e) => {
-                        eprintln!("Failed to run FantASM at {}: {}", fantasm.display(), e);
+                        eprintln!("Failed to run assembler at {}: {}", assembler.display(), e);
                         std::process::exit(1);
                     }
                 }
             }
             None => {
                 eprintln!("Assembler not found. Install with: cargo install retrolang-asm");
-                eprintln!("Or use --fantasm to specify path to any Z80 assembler.");
+                eprintln!("Or use --assembler to specify path to any Z80 assembler.");
                 eprintln!("Assembly file saved to: {}", asm_path.display());
                 std::process::exit(1);
             }
@@ -182,8 +182,8 @@ fn main() {
     }
 }
 
-/// Find the assembler executable (retrolang-asm or fantasm)
-fn find_fantasm(explicit_path: &Option<PathBuf>) -> Option<PathBuf> {
+/// Find the assembler executable (retrolang-asm)
+fn find_assembler(explicit_path: &Option<PathBuf>) -> Option<PathBuf> {
     // 1. Use explicit path if provided
     if let Some(path) = explicit_path {
         if path.exists() {
@@ -194,36 +194,27 @@ fn find_fantasm(explicit_path: &Option<PathBuf>) -> Option<PathBuf> {
     // 2. Check next to this executable
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(exe_dir) = exe_path.parent() {
-            // Prefer retrolang-asm
             let retrolang_asm = exe_dir.join("retrolang-asm");
             if retrolang_asm.exists() {
                 return Some(retrolang_asm);
             }
-            let fantasm = exe_dir.join("fantasm");
-            if fantasm.exists() {
-                return Some(fantasm);
-            }
         }
     }
 
-    // 3. Check for retrolang-asm or fantasm in PATH
-    for name in &["retrolang-asm", "fantasm"] {
-        if let Ok(output) = Command::new("which").arg(name).output() {
-            if output.status.success() {
-                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if !path.is_empty() {
-                    return Some(PathBuf::from(path));
-                }
+    // 3. Check for retrolang-asm in PATH
+    if let Ok(output) = Command::new("which").arg("retrolang-asm").output() {
+        if output.status.success() {
+            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !path.is_empty() {
+                return Some(PathBuf::from(path));
             }
         }
     }
 
     // 4. Check current working directory
-    for name in &["retrolang-asm", "fantasm"] {
-        let path = PathBuf::from(name);
-        if path.exists() {
-            return Some(path);
-        }
+    let path = PathBuf::from("retrolang-asm");
+    if path.exists() {
+        return Some(path);
     }
 
     None
