@@ -1,6 +1,6 @@
 # Build artifacts
 /target/
-fantasm_src/target/
+tools/*/target/
 
 # IDE
 .idea/
@@ -21,3 +21,6 @@ CLAUDE.md
 
 # Generated assembly (keep examples clean)
 examples/*.asm
+
+# Generated C headers
+examples/*.h
