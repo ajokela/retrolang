@@ -8,7 +8,7 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(name = "bin2c")]
 #[command(author = "Alex Jokela")]
-#[command(version = "0.1.0")]
+#[command(version = "0.1.1")]
 #[command(about = "Convert Z80 binary ROMs to C arrays for Arduino sketches")]
 struct Args {
     /// Input binary file

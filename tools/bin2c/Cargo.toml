@@ -1,6 +1,6 @@
 [package]
 name = "retrolang-bin2c"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Convert Z80 binary ROMs to C arrays for Arduino sketches"
 authors = ["Alex Jokela"]
