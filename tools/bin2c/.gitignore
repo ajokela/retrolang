@@ -1,0 +1,26 @@
+# Build artifacts
+/target/
+tools/*/target/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude
+CLAUDE.md
+
+# Compiled binaries
+*.bin
+
+# Generated assembly (keep examples clean)
+examples/*.asm
+
+# Generated C headers
+examples/*.h
